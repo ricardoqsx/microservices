@@ -38,6 +38,6 @@ luego, se procede a subirla
 
 # Contextos de Docker
 
-- para ver mas del docker [daemon.json] -> (https://docs.docker.com/config/daemon/)
+- para ver mas del docker [daemon.json](https://docs.docker.com/config/daemon/)
 
 ### ========================================================================================
