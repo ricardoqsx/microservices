@@ -1,4 +1,4 @@
-|# **Docker Swarm**
+# **Docker Swarm**
 
 ## ***es un orquestador de contenedores***
 
