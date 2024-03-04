@@ -5,10 +5,10 @@
 - politica de reinicio de contenedores
 - log driver
 - otros conceptos
-- [lo encuentras aqui ->] (https://docs.docker.com/config/containers/resource_constraints/)
+- [los recursos de contenedores lo encuentras aqui](https://docs.docker.com/config/containers/resource_constraints/)
 - stress para hacer pruebas de estres en linux
-- [en docker compose, la documentacion oficial se puede ubicar aqui ->] (https://docs.docker.com/compose/compose-file/)
-- [docker storage drivers] -> (https://docs.docker.com/storage/storagedriver/select-storage-driver/)
+- [en docker compose, la documentacion oficial se puede ubicar aqui](https://docs.docker.com/compose/compose-file/)
+- [docker storage drivers](https://docs.docker.com/storage/storagedriver/select-storage-driver/)
 
 
 ### ========================================================================================
@@ -19,7 +19,7 @@ Basicamente para crear repositorios privados en servidores locales o empresarial
 
 - primero se instala el registry
 
-[Aqui] (https://hub.docker.com/_/registry)
+[Aqui](https://hub.docker.com/_/registry)
 
 luego, la imagen ya lista mediante un dockerfile se taggea de la siguiente manera
  # docker tag image_name host:port/image
