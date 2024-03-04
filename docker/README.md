@@ -22,16 +22,16 @@ Basicamente para crear repositorios privados en servidores locales o empresarial
 [Aqui](https://hub.docker.com/_/registry)
 
 luego, la imagen ya lista mediante un dockerfile se taggea de la siguiente manera
- # docker tag image_name host:port/image
- # docker tag image_name localhost:5000/imagen
+ - docker tag image_name host:port/image
+ - docker tag image_name localhost:5000/imagen
 
 luego, se procede a subirla
 
-# docker push localhost:5000/image
+- docker push localhost:5000/image
 
  para descargar la imagen:
 
-# docker pull localhost:5000/image
+- docker pull localhost:5000/image
 
 
 ### ========================================================================================
@@ -39,8 +39,5 @@ luego, se procede a subirla
 # Contextos de Docker
 
 - para ver mas del docker [daemon.json] -> (https://docs.docker.com/config/daemon/)
-
-### ========================================================================================
-
 
 ### ========================================================================================
