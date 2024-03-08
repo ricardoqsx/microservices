@@ -46,18 +46,24 @@ contunto de maquinas con docker instalados que interactuan entre ellas
 
 el cluster se inicia primero creando un nodo tipo manager que va a ser el inicial del cual partira el resto.
 
-**docker swarm init --advertise-addr *<ip_address>***
+```
+*docker swarm init --advertise-addr *<ip_address>*
+```
 
 - con esto se inicializa el cluster
 - se le asigna un nombre (el cual es una cadena larga)
 
 - seguidamente te da el comando para unir workers:
 
-**docker swarm join -- token *<id_de_token ip_address:2377>***
+```
+*docker swarm join -- token *<id_de_token ip_address:2377>**
+```
 
 - para añadir un manager al swarm recien inicializado, hay que correr el siguiente comando:
 
-**docker swarm join-token manager**
+```
+*docker swarm join-token manager*
+```
 
 - y seguir las instrucciones.
 
@@ -67,7 +73,9 @@ el cluster se inicia primero creando un nodo tipo manager que va a ser el inicia
 
 - se utiliza el comando docker node para visualizar opciones del nodo
 
-**docker node ls**
+```
+*docker node ls*
+```
 
 - con este se pueden visualizar los nodos que estan activos.
 
@@ -77,12 +85,16 @@ estos comandos de gestion solo pueden ser utilizados desde un manager, desde un 
 
 - En caso de que se pierda de vista el token, se puede usar el siguiente comando:
 
-**docker swarm manage join-token <node_type>**
+```
+*docker swarm manage join-token <node_type>*
+```
 
 - puede ser manager o worker, osea que puede ser asi:
-**docker swarm manage join token manager**
-**docker swarm manage join tocker worker**
 
+```
+*docker swarm manage join token manager*
+*docker swarm manage join token worker*
+```
 - seguidamente el prompt enviara un comando junto con el token que se utilizara para agregarse al manager
 
 - Adicional, habran diferentes tipos de estados al tratarse de managers, ejemplo:
@@ -125,27 +137,39 @@ adicional, existe el comando **docker node update --role (worker|manager)**  el 
 
 esto para evitar que un cluster envie tareas ahi, o para tenerlas bien definidas
 se usa el comando 
-<docker service update --labe-add key=val nodo>
+
+```
+docker service update --labe-add key=val nodo
+```
 
 
 - si se agrega una etiqueta se puede restringir que si se crea un servicio, solo se despliegue en la etiqueta mencionada
 
-<docker service create servicio --constraint node.label.key==label nginx>
+```
+docker service create servicio --constraint node.label.key==label nginx
+```
 
 - aqui evita la etiqueta
-<docker service create servicio --constraint node.label.key!=label nginx>
+
+```
+docker service create servicio --constraint node.label.key!=label nginx
+```
 
 ## nodos preferentes
 
 
 - asi se ejecuta un nodo preferente, una especie de condicion or, ya que si se ejecuta, prefiere buscar la etiqueta, y si no la encuentra igual avanza
-<docker service create servicio --placement-pref spread=node.label.key!=label --replicas=3 nginx>
+
+```
+docker service create servicio --placement-pref spread=node.label.key!=label --replicas=3 nginx
+```
 
 ## Quitar nodos del cluster
 
-<docker swarm leave> <- con esto desde el nodo se abandona el cluster desde el nodo
-<docker node rm nombre_nodo> con esto desde un manager se borra el nodo del cluster
-
+```
+docker swarm leave <- con esto desde el nodo se abandona el cluster desde el nodo
+docker node rm nombre_nodo con esto desde un manager se borra el nodo del cluster
+```
 # ====================
 
 # Servicios y replicas
@@ -184,25 +208,35 @@ la logica de ejecucion va mas o menos de esta manera:
 
 - para crear un servicio global
 
-<docker service create --name web4 -p 8006:80 --mode global httpd>
+```
+docker service create --name web4 -p 8006:80 --mode global httpd
+```
 
 ## Crear un servicio
 
 - Se usa el comando:
 
-<docker service create --name apache httpd>
+```
+docker service create --name apache httpd
+```
 
 - Igualmente, para ver los servicios creados:
 
-<docker service ls>
+```
+docker service ls
+```
 
 - Para ver los contenedores del servicio
 
-<docker service ps service_name>
+```
+docker service ps service_name
+```
 
 - para ver informacion del servicio:
 
-<docker service inspect service_name>
+```
+docker service inspect service_name
+```
 
 - algo interesante de este ultimo es la opcion --pretty, que muestra el output mas "bonito"
 
@@ -211,7 +245,9 @@ la logica de ejecucion va mas o menos de esta manera:
 - similar a lo visto de publicar puertos en docker
 - ejemplo:
 
-<docker service create --name servicio_web --publish published=9000,target=80 httpd>
+```
+docker service create --name servicio_web --publish published=9000,target=80 httpd
+```
 
 - cuando se publica un puerto, este en auto sera abierto y replicado en todos los nodos del cluster
 
@@ -219,7 +255,9 @@ la logica de ejecucion va mas o menos de esta manera:
 
 es la posibilidad dada de clonar para que se pueda dar servicios en varios servidores, permite sobre todo mejorar el rendimiento y tener una mayor disponibilidad de nuestra app
 
-<docker service create --name web3 -p 8003:80 --replicas=3 imagen>
+```
+docker service create --name web3 -p 8003:80 --replicas=3 imagen
+```
 
 - se crea a lo largo del custer, y se puede ver con service ls
 
@@ -247,11 +285,15 @@ a swarm no le importa que hay dentro de un contenedor ya que solo recibe la orde
 
 - si tengo un servicio sin replicas:
 
+```
 docker service scale servicio=5
+```
 
 - esto aumentaria el numero de replicas a 5, luego modificaremos el limite de RAM que puede usar un servicio:
 
+```
 docker service update --limit-memory 10m servicio
+```
 
 - aqui se logra apreciar que debe actualizar todas las replicas
 
@@ -280,8 +322,8 @@ es una red distribuida que se expande entre todos los host de todos los clusters
 
 - el comando seria:
 
-<docker node update --availability drain nombre_nodo>
-
-
+```
+docker node update --availability drain nombre_nodo
+```
 
 # ====================
