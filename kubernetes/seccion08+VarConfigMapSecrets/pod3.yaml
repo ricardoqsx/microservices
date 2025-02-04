@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod3
+spec:
+  containers:
+    - name: contenedor3
+      image: k8s.gcr.io/busybox
+      command: [ "/bin/sh", "-c", "sleep 1000000" ]
+      volumeMounts:
+      - name: volumen-config-map
+        mountPath: /etc/config-map
+  volumes:
+    - name: volumen-config-map
+      configMap:
+        name: config-volumen
+  restartPolicy: Never

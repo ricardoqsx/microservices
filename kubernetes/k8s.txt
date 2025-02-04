@@ -1,0 +1,88 @@
+Kubernetes (video pelado)!
+
+Es una herramienta orquestacion de contenedores
+(algo asi como un gestor o un manejador)
+
+Teoria:
+
+un orquestador es lo que te permite manejar muchas aplicaciones dentro de contenedores
+a traves de muchos servidores (pueden ser fisicos o virtuales)
+
+Que resuelve?
+
+Manejar muchos contenedores:
+(100, 200, 500, 1000)
+
+Alta disponibilidad:
+a traves de replicas de tu aplicacion, si una deja de funcionar, kubernetes envia el trafico a otro 
+contenedor funcionando
+
+cero downtime:
+
+
+escalabilidad:
+en casos como tener mas trafico o desees tener mas capacidad para recibir mas trafico
+
+Disaster Recovery:
+facilidad para recrear aplicaciones ya que todo esta basado en manifiestos declarativos
+
+Grupos:
+Masters: hay varios componentes, entre ellos:
+	API Server: se encarga de exponer una interfaz para que diferentes clientes puedan
+		interactuar con kubernetes, ejemplo: WEB UI, Clientes API, cliente kubernetes, kubectl
+	Controller Manager: maneja lo que pasa en el cluster, esta todo el tiempo al tanto de los contenedores
+		que estan corriendo y los contenedores que tienen que estar corriendo
+		existen 4 tipos de controllers:
+			- Node Controller
+			- Replication Controller
+			- Endpoint Controller
+			- Service Account & Token Controller
+	Scheduler: recibir las ordenes del controller manager y mueve los pods de lugar en lugar
+	etcd: base de datos de kubernetes: tiene el estado de tu cluster, configuraciones e informacion
+		esta basado en key value (clave, valor) osea que no tienes tablas
+Workers: cada worker corre un agente de kubernetes que se llama kubelet, aqui se corren los pods de tu aplicacion
+	pod: un set de contenedores (me suena a un stack de docker compose) que tiene un solo IP o 
+		    mejor dicho comparten un mismo namespace de red, generalmente se corre un solo contenedor
+		    en cada pod pero tambien se usan mas de uno por pod ya que se pueden dividir las tareas
+		    tomar en cuenta: los pods son volatiles (ejemlo, cuando se hace un deploy para cambiar la version)
+		    los pods se estruyen y se crea uno nuevo
+	overlay network: esta a traves de todos nuestros nodos, permite compartir una red entre todos los pods
+		    sin importar en que nodo o worker esten, asi un pod A puede llegar a un pod B sin importar
+		    en que nodo o worker esten
+Como los pods son volatiles, no es buena idea apuntar a la ip para llegar a el, lo que se hace generalmente es
+crear un servicio de kubernetes, hay varios, los mas comunes son cluster IP, asi en lugar de ir de pod a pod 
+vas a ir de un pod a un servicio y ese servicio tiene como backend los pods que corren tu aplicacion.
+El servicio encuentra esos pods basado en un set de reglas o etiquetas que le puedes poner a tus pods para que
+el servicio los pueda encontrar.
+
+Servicios: son abstracciones que definen un set logico de pods basado en una politica, generalmente una etiqueta
+	cluster IP: e caracteriza por tener una ip que nunca cambia
+	Load Balancer: permite crear un balanceador de carga en tu proveedor
+	Ingress: permite crear reglas basadas en el subdomain
+	Node Port: te permite crear un puerto en el nodo que va a llegar a tu app
+ 
+Manifiestos son deployments para crear pods
+
+ejemplo:
+
+========================================
+apiVersion: v1
+kind: Deployment
+metadata:
+  app: backend
+spec:
+  replicas: 3
+  containers:
+    - name: miapp-backend
+      image: ricardoqsx/backend
+      env:
+        - name: DEBUG
+          value: true
+==========================================
+una vez aplicas ese manifiesto, el controller manager se encarga de crear esos pods en todo tu cluster
+
+*** Curso Kubernetes ***
+
+Directorios importantes que se instalan bajo kubernetes
+
+.kube

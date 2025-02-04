@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  labels:
+    otra: mi_etiqueta
+spec:
+  containers:
+   - name: nginx
+     image: nginx:latest
+# importante, aqui puede ir mas de un contenedor
