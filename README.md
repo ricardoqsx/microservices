@@ -1,6 +1,6 @@
 # Apuntes sobre cursos de contenedores
 
-- Se cubren las siguientes tecnologias
+- En los siguientes apuntes se cubren las siguientes tecnologias
 
 1. docker
 2. compose
