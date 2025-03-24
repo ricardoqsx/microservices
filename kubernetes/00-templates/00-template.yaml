@@ -1,0 +1,345 @@
+# 1. Namespace (namespace.yaml)
+# Define un Namespace para agrupar recursos lógicamente
+apiVersion: v1                 # Versión de la API de Kubernetes a usar
+kind: Namespace                # Tipo de recurso que estamos creando
+metadata:
+  name: nextcloud-ns           # Nombre identificador del Namespace
+  labels:                      # Etiquetas para organización/metadatos
+    app: nextcloud             # Etiqueta clave-valor para agrupación
+    environment: development   # Podemos agregar más etiquetas según necesidad
+
+---
+
+# 2. Secrets (secrets.yaml)
+# Almacena datos sensibles de forma segura (contraseñas, tokens, etc)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: db-secrets             # Nombre del Secret (referenciable desde otros recursos)
+  namespace: nextcloud-ns      # Namespace donde vivirá este Secret
+type: Opaque                   # Tipo de Secret (Opaque = datos genéricos)
+data:                          # Datos en formato clave-valor (BASE64 obligatorio)
+                               # Generar valores con: echo -n "valor" | base64
+  mysql-root-password: eHh4eXl5enp6  # Valor codificado de "xxxyyyzzz"
+  mysql-password: eHh4eXl5enp6       # Mismo proceso para cada variable
+  mysql-user: bmV4dGNsb3Vk     # nextcloud en base64
+  mysql-database: bmV4dGNsb3Vk
+
+---
+
+# 3. PersistentVolume (pv.yaml)
+# Define almacenamiento físico disponible en el cluster
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: db-pv                  # Identificador único del volumen
+  namespace: nextcloud-ns      # Namespace asociado (opcional para PVs)
+  labels:                      
+    type: local                # Etiqueta útil para selección posterior
+spec:
+  storageClassName: manual     # Clase de almacenamiento (agrupa volúmenes similares)
+  capacity:                   # Capacidad del volumen
+    storage: 5Gi              # 5 Gibibytes (formato aceptado por K8s)
+  accessModes:                # Cómo puede ser montado el volumen
+    - ReadWriteOnce           # Solo un nodo puede montarlo en modo escritura
+  hostPath:                   # Tipo de volumen (solo para desarrollo/local)
+    path: "/mnt/data/db"      # Ruta ABSOLUTA en el nodo host
+  persistentVolumeReclaimPolicy: Retain  # Comportamiento al eliminar PVC (Retain/Delete/Recycle)
+
+---
+
+# 4. PersistentVolumeClaim (pvc.yaml)
+# Solicitud de almacenamiento por un Pod (abstracción del PV físico)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: db-pvc                 # Nombre identificador del PVC
+  namespace: nextcloud-ns
+spec:
+  storageClassName: manual     # Debe coincidir con el PV deseado
+  accessModes:
+    - ReadWriteOnce           # Debe coincidir con las capacidades del PV
+  resources:
+    requests:
+      storage: 5Gi            # Cantidad solicitada (no puede exceder la capacidad del PV)
+  # selector:                # Opcional: Restringir a PVs con etiquetas específicas
+  #   matchLabels:
+  #     type: local
+
+---
+
+# 5. Database Deployment (db-deployment.yaml)
+# Define la implementación de la base de datos (réplicas, actualizaciones, etc)
+apiVersion: apps/v1            # Versión de API para Deployments
+kind: Deployment
+metadata:
+  name: db-deployment
+  namespace: nextcloud-ns
+spec:
+  replicas: 1                  # Número de réplicas del Pod
+  selector:                    # Cómo el Deployment encuentra sus Pods
+    matchLabels:
+      app: db                  # Debe coincidir con las labels del Pod template
+  strategy:
+    type: Recreate            # Estrategia de actualización (Recreate/RollingUpdate)
+  template:                   # Plantilla del Pod
+    metadata:
+      labels:                 # Etiquetas clave para selectores de servicio
+        app: db
+        tier: backend
+    spec:
+      containers:
+      - name: mariadb         # Nombre del contenedor dentro del Pod
+        image: mariadb:10.6   # Imagen del contenedor
+        args:                 # Equivalente al 'command' en Docker
+          - "--transaction-isolation=READ-COMMITTED"
+          - "--log-bin=binlog"
+          - "--binformato=ROW"
+        ports:
+        - containerPort: 3306  # Puerto expuesto por el contenedor
+        env:                   # Variables de ambiente
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:      # Referencia a un Secret
+              name: db-secrets
+              key: mysql-root-password
+        # ... Repetir para otras variables
+        volumeMounts:         # Montar volúmenes en el contenedor
+        - name: db-storage    # Nombre referencia al volumen
+          mountPath: /var/lib/mysql  # Ruta dentro del contenedor
+        resources:            # Límites y solicitudes de recursos
+          limits:
+            memory: "512Mi"  # Máximo de memoria permitido
+          requests:           # Recursos mínimos requeridos
+            memory: "256Mi"
+            cpu: "100m"       # 100 milicores (0.1 core)
+      volumes:               # Volúmenes disponibles para el Pod
+      - name: db-storage
+        persistentVolumeClaim:
+          claimName: db-pvc  # Vinculación al PVC
+
+---
+
+# 6. Database Service (db-service.yaml)
+# Expone los Pods de la base de datos dentro del cluster
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-service
+  namespace: nextcloud-ns
+spec:
+  selector:                  # Selecciona Pods con estas etiquetas
+    app: db
+  ports:
+    - name: mysql           # Nombre descriptivo del puerto
+      protocol: TCP         # Protocolo de red (TCP/UDP)
+      port: 3306            # Puerto expuesto por el servicio
+      targetPort: 3306      # Puerto en los Pods de destino
+  type: ClusterIP           # Tipo de servicio (solo accesible dentro del cluster)
+  # clusterIP: None         # Para crear un Headless Service (útil para StatefulSets)
+
+---
+
+# 7. Nextcloud Deployment (app-deployment.yaml)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nextcloud-deployment
+  namespace: nextcloud-ns
+spec:
+  replicas: 2                # Número de instancias de la aplicación
+  selector:
+    matchLabels:
+      app: nextcloud
+  strategy:
+    type: RollingUpdate      # Actualización gradual (sin downtime)
+    rollingUpdate:
+      maxSurge: 1           # Máximo de Pods adicionales durante actualización
+      maxUnavailable: 0     # Cero Pods no disponibles durante actualización
+  template:
+    metadata:
+      labels:
+        app: nextcloud
+        tier: frontend
+    spec:
+      containers:
+      - name: nextcloud
+        image: nextcloud:31.0.2
+        ports:
+        - containerPort: 80
+        env:
+        - name: MYSQL_HOST
+          value: db-service  # Usa el nombre del servicio de la base de datos
+        # ... Otras variables
+        volumeMounts:
+        - name: app-storage
+          mountPath: /var/www/html
+        livenessProbe:       # Verifica si el contenedor está saludable
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:      # Determina si el contenedor está listo para recibir tráfico
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+      - name: app-storage
+        persistentVolumeClaim:
+          claimName: app-pvc
+
+---
+
+# 8. Nextcloud Service (app-service.yaml)
+apiVersion: v1
+kind: Service
+metadata:
+  name: nextcloud-service
+  namespace: nextcloud-ns
+spec:
+  selector:
+    app: nextcloud
+  ports:
+    - protocol: TCP
+      port: 80              # Puerto expuesto por el servicio
+      targetPort: 80        # Puerto en los Pods
+      nodePort: 30080       # Solo para NodePort (rango 30000-32767)
+  type: NodePort            # Expone el servicio en un puerto del nodo
+  # type: LoadBalancer      # Para usar con proveedores cloud (AWS ELB, GCP LB)
+
+---
+
+# 9. Ingress (ingress.yaml)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nextcloud-ingress
+  namespace: nextcloud-ns
+  annotations:              # Configuraciones específicas del controlador
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    cert-manager.io/cluster-issuer: "letsencrypt-prod" # Ejemplo para TLS
+spec:
+  tls:                     # Configuración TLS/SSL
+  - hosts:
+    - nextcloud.example.com
+    secretName: nextcloud-tls
+  rules:
+  - host: nextcloud.example.com # Dominio para el tráfico
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: nextcloud-service
+            port: 
+              number: 80
+
+# 10. Horizontal Pod Autoscaler (hpa.yaml)
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: nextcloud-hpa
+  namespace: nextcloud-ns
+spec:
+  scaleTargetRef:           # Recurso a escalar
+    apiVersion: apps/v1
+    kind: Deployment
+    name: nextcloud-deployment
+  minReplicas: 1           # Mínimo de réplicas
+  maxReplicas: 5           # Máximo de réplicas
+  metrics:                 # Métricas para escalar
+  - type: Resource         # Basado en uso de recursos
+    resource:
+      name: cpu            # Escalar por uso de CPU
+      target:
+        type: Utilization  # Porcentaje de uso
+        averageUtilization: 80  # Escalar si el uso promedio supera 80%
+  # - type: Pods           # Otros tipos de métricas posibles
+  #   pods:
+  #     metric:
+  #       name: packets-per-second
+  #     target:
+  #       type: AverageValue
+  #       averageValue: 1k
+
+# RBAC (rbac.yaml)
+
+# ServiceAccount: Identidad para procesos dentro de un Pod
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: nextcloud-sa
+  namespace: nextcloud-ns
+
+---
+# Role: Permisos dentro de un namespace específico
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: nextcloud-role
+  namespace: nextcloud-ns
+rules:
+- apiGroups: [""]           # Grupo de la API ("" = core API group)
+  resources: ["pods", "services"]
+  verbs: ["get", "list", "watch"] # Acciones permitidas
+
+---
+# RoleBinding: Asigna un Role a un Subject (usuario/grupo/SA)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: nextcloud-role-binding
+  namespace: nextcloud-ns
+subjects:
+- kind: ServiceAccount
+  name: nextcloud-sa        # ServiceAccount al que se asignan permisos
+  namespace: nextcloud-ns
+roleRef:
+  kind: Role
+  name: nextcloud-role      # Role a asignar
+  apiGroup: rbac.authorization.k8s.io
+
+#===============================
+# Notas Clave para Personalización:
+# Secrets: Siempre usar kubectl create secret para producción en lugar de codificar valores
+# 
+# PersistentVolumes: En cloud usar storageClassName: standard en lugar de hostPath
+# 
+# Probes: Ajustar livenessProbe y readinessProbe según la aplicación
+# 
+# Resource Limits: Calcular según los requisitos reales de la aplicación
+# 
+# Ingress TLS: Requiere un controlador de Ingress y un ClusterIssuer configurado
+# 
+# HPA: Considerar métricas personalizadas con metrics-server instalado
+# 
+# RBAC: Principio de mínimo privilegio - solo los permisos necesarios
+#===============================
+
+# Orden recomendado de aplicación:
+# kubectl apply -f namespace.yaml
+# kubectl apply -f secrets.yaml
+# kubectl apply -f pv.yaml
+# kubectl apply -f pvc.yaml
+# kubectl apply -f db-deployment.yaml
+# kubectl apply -f db-service.yaml
+# kubectl apply -f app-deployment.yaml
+# kubectl apply -f app-service.yaml
+# kubectl apply -f ingress.yaml
+# kubectl apply -f hpa.yaml
+# kubectl apply -f rbac.yaml
+
+# Cada recurso tiene dependencias específicas:
+# Los PVCs dependen de PVs existentes
+# Los Deployments dependen de Secrets y PVCs
+# Los Services dependen de los selectores correctos en los Deployments
+# El Ingress depende de un controlador instalado y del Service
+
+# Para depurar:
+# kubectl describe <resource>/<name> -n nextcloud-ns
+# kubectl logs <pod-name> -n nextcloud-ns
+# kubectl get events -n nextcloud-ns --sort-by=.metadata.creationTimestamp
