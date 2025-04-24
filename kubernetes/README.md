@@ -12,7 +12,7 @@ Segun tu sistema, y luego de tener las dependencias necesarias instaladas (segun
 
 a partir de aqui, tu cluster deberia estar arriba.
 
-aparte a esto, tambien se necesita de una herramienta para llevar a cabo la administracion del cluster, en este caso, `kubeclt`
+aparte a esto, tambien se necesita de una herramienta para llevar a cabo la administracion del cluster, en este caso, `kubectl`
 
 ### Instalacion de kubectl
 
@@ -112,12 +112,12 @@ si tiene un nombre distinto a minikube se usa la opcion `-p nombre`
 
 Tipicamente, en un entorno de contenedores, primero debe convertirse en una imagen que luego pueda desplegarse en forma de contenedor.
 
-Hay 2 formas, modo imperativo y modo declarativo
+Hay 2 formas, modo imperativo y modo declarativo:
 
-imperativo: parecido a usar docker run
-declarativo: similar a docker compose
+- imperativo: similar a usar docker run
+- declarativo: similar a docker compose
 
-en el modo declarativo se crea un manifest de tipo yaml para dar las reclas sobre como distribuir mi aplicacion, todo se guarda en ectcd (la base de datos de kubernetes)
+en el modo declarativo se crea un manifest de tipo yaml para dar las reglas sobre como distribuir mi aplicacion, todo se guarda en ectcd (la base de datos de kubernetes)
 
 Estado deseado de la aplicacion: k8s continuamente pregunta si el estado real coincide con el estado deseado de la aplicacion, por ende, si en la realidad solo hay 2 replicas y se pidieron 5, este trabajara en eso en automatico
 
@@ -155,7 +155,7 @@ En el ambito de microservicios, es importante tener en cuenta que habran casos d
 
 - ciclo de vida
 - backups
-- rebotes
+- reinicios (rebotes en España)
 - actualizaciones
 
 todo esto entre contenedores, es preferible mantenerlas separadas, siguiendo la logica de los microservicios
@@ -202,7 +202,7 @@ seria de la siguiente manera, siguiendo el ejemplo anterior:
 
 `kubectl describe pod/nginx1`
 
-con esto se obtiene toda la imformacion relevante sobre ese pod
+con esto se obtiene toda la informacion relevante sobre ese pod
 
 importante describir el recurso al que se refiere, ejemplo si es un pod, un load balancer, deployment, namespace, etc.
 
@@ -399,7 +399,7 @@ hay 3 opciones
 - OnFalure
 - Never
 
-a los pods que  no se les pone la propiedad, rebotan (reinician) por defecto
+a los pods que  no se les pone la propiedad, reinician por defecto
 
 ```
 apiVersion: v1
