@@ -483,7 +483,7 @@ las anotaciones son similares porque tambien son clave:valor pero en realidad so
 
 ### Workloads y Controllers
 
-Son pods que funcionan teniendo los contenedores dentro, pero no tienen determinadas caracteristicas que se necesitan dentro de un cluster como por ejemplo:
+Son pods que funcionan teniendo los contenedores dentro, pero tienen determinadas caracteristicas (que no tiene un pod tipicamente) que se necesitan dentro de un cluster como por ejemplo:
 
 - creacion de nuevas replicas
 - escalamiento
