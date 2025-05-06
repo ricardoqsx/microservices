@@ -458,7 +458,7 @@ no hay un responsable, osea elimina la etiqueta
 
 ### Selectors
 
-los selectores como como wheres que se usan para localizar objetos que tengan determinadas etiquetas
+los selectores como como wheres que se usan para localizar objetos que tengan determinadas etiquetas que se tengan que gobernar
 
 - un ejemplo: buscar todos los pods que tengan la etiqueta "desarrollo"
 
@@ -735,13 +735,9 @@ con esto se logra que entre servicios se logren ver
 como se puede agregar mas de un objeto en un manifiesto yaml? simple, con 3 guiones
 `---` a modo de separar cada una de las secciones
 
-con el comando `kubectl describe endpoints <nombre-servicio>` con lo cual se puede ver informacion mas detallada del las ip del pod, los selectores, labels, etc.
+con el comando `kubectl get endpoints` se logra ver cuales son los endpoints de los servicios que estan activos, ademas con el comando `kubectl describe endpoints <nombre-servicio>` con lo cual se puede ver informacion mas detallada del las ip del pod, los selectores, labels, etc.
 
 importante destacar que kubernetes agrega ciertas variables de entorno para el servicio relacionado, se puede ver ejecutando ENV dentro del pod
-
-#### Rolling Updates
-#### Rollbacks
-#### Recreate
 
 ## Seccion 5: Namespaces
 
